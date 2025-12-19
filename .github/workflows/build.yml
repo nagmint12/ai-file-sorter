@@ -1,4 +1,4 @@
-name: Build
+name: Build (Windows EXE)
 
 on:
   push:
@@ -7,11 +7,8 @@ on:
     branches: [ main, dev ]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
+  build-windows:
+    runs-on: windows-latest
 
     steps:
       - name: Check out repository
@@ -19,32 +16,49 @@ jobs:
         with:
           submodules: recursive
 
+      # 1) MSVC 환경 세팅
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      # 2) Qt 설치 (Windows)
       - name: Set up Qt
         uses: jurplel/install-qt-action@v3
         with:
           version: '6.6.3'
-          host: linux
+          host: windows
           target: desktop
+          arch: win64_msvc2019_64
 
-      - name: Install dependencies
+      # 3) vcpkg 설치
+      - name: Install vcpkg
+        uses: lukka/run-vcpkg@v11
+
+      # 4) 의존성 설치 (Windows용)
+      - name: Install dependencies with vcpkg
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake ninja-build libcurl4-openssl-dev libjsoncpp-dev libsqlite3-dev libssl-dev libfmt-dev libspdlog-dev
+          vcpkg install curl jsoncpp sqlite3 openssl fmt spdlog
 
+      # 5) CMake Configure (Windows + MSVC)
       - name: Configure
         run: |
-          cmake -S app -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release
+          cmake -S app -B build ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
 
+      # 6) Build
       - name: Build
-        run: cmake --build build
+        run: cmake --build build --config Release
 
+      # 7) Test (선택)
       - name: Run ctest
-        run: cd build && ctest --output-on-failure
+        run: |
+          cd build
+          ctest -C Release --output-on-failure
 
-      # ✅ NEW: Upload build outputs so you can download them from the Actions page
+      # 8) EXE 업로드
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ai-file-sorter-${{ matrix.os }}-release
+          name: ai-file-sorter-windows-exe
           path: |
-            build/**
+            build\Release\*.exe

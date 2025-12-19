@@ -40,7 +40,7 @@ jobs:
         shell: cmd
         run: |
           %VCPKG_ROOT%\vcpkg.exe version
-          %VCPKG_ROOT%\vcpkg.exe install curl jsoncpp sqlite3 openssl fmt spdlog --triplet x64-windows --only-release
+          %VCPKG_ROOT%\vcpkg install zlib curl boost --triplet x64-windows --classic
 
       # 5) CMake Configure (Windows + MSVC)
       - name: Configure

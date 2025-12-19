@@ -29,23 +29,20 @@ jobs:
           target: desktop
           arch: win64_msvc2019_64
 
-      # 3) vcpkg 설치/캐시 (권장 설정)
+      # 3) vcpkg 설치/캐시
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
         with:
-          # 필요 시 고정 커밋 사용 권장(재현성)
-          # vcpkgGitCommitId: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
           vcpkgDirectory: ${{ github.workspace }}\vcpkg
 
-      # 4) 의존성 설치 (Windows용) - cmd로 실행 (환경변수/줄바꿈 안정)
-      - name: Install dependencies with vcpkg
+      # 4) 의존성 설치 (Release만)
+      - name: Install dependencies with vcpkg (Release only)
         shell: cmd
         run: |
           %VCPKG_ROOT%\vcpkg.exe version
-          %VCPKG_ROOT%\vcpkg.exe install curl jsoncpp sqlite3 openssl fmt spdlog --triplet x64-windows
+          %VCPKG_ROOT%\vcpkg.exe install curl jsoncpp sqlite3 openssl fmt spdlog --triplet x64-windows --only-release
 
       # 5) CMake Configure (Windows + MSVC)
-      #    - PowerShell 줄바꿈 문제 제거: cmd로 실행 + 한 줄 구성
       - name: Configure
         shell: cmd
         run: |

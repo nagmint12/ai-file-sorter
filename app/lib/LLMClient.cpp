@@ -201,7 +201,7 @@ std::string LLMClient::send_api_request(std::string json_payload) {
     }
 
     std::string response_string;
-    const std::string api_url = "https://api.openai.com/v1/chat/completions";
+    const std::string api_url = "http://127.0.0.1:8080/v1/chat/completions";
     auto logger = Logger::get_logger("core_logger");
 
     if (logger) {

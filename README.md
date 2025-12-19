@@ -450,3 +450,5 @@ Support the development of **AI File Sorter** and its future features. Every con
 USDT is also accepted in Ethereum and Tron chains.
 
 ---
+
+(tri

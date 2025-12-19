@@ -20,7 +20,7 @@ jobs:
       - name: Set up MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
-      # 2) Qt 설치 (Windows)
+      # 2) Qt 설치 (Windows / MSVC)
       - name: Set up Qt
         uses: jurplel/install-qt-action@v3
         with:
@@ -29,28 +29,40 @@ jobs:
           target: desktop
           arch: win64_msvc2019_64
 
-      # 3) vcpkg 설치
-      - name: Install vcpkg
+      # 3) vcpkg 설치/캐시 (권장 설정)
+      - name: Setup vcpkg
         uses: lukka/run-vcpkg@v11
+        with:
+          # 필요 시 고정 커밋 사용 권장(재현성)
+          # vcpkgGitCommitId: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          vcpkgDirectory: ${{ github.workspace }}\vcpkg
 
-      # 4) 의존성 설치 (Windows용)
+      # 4) 의존성 설치 (Windows용) - cmd로 실행 (환경변수/줄바꿈 안정)
       - name: Install dependencies with vcpkg
+        shell: cmd
         run: |
-          vcpkg install curl jsoncpp sqlite3 openssl fmt spdlog
+          %VCPKG_ROOT%\vcpkg.exe version
+          %VCPKG_ROOT%\vcpkg.exe install curl jsoncpp sqlite3 openssl fmt spdlog --triplet x64-windows
 
       # 5) CMake Configure (Windows + MSVC)
+      #    - PowerShell 줄바꿈 문제 제거: cmd로 실행 + 한 줄 구성
       - name: Configure
+        shell: cmd
         run: |
-          cmake -S app -B build ^
-            -DCMAKE_BUILD_TYPE=Release ^
-            -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake
+          cmake -S app -B build -G "Visual Studio 17 2022" -A x64 ^
+            -DCMAKE_TOOLCHAIN_FILE=%VCPKG_ROOT%\scripts\buildsystems\vcpkg.cmake ^
+            -DVCPKG_TARGET_TRIPLET=x64-windows ^
+            -DCMAKE_BUILD_TYPE=Release
 
       # 6) Build
       - name: Build
-        run: cmake --build build --config Release
+        shell: cmd
+        run: |
+          cmake --build build --config Release
 
       # 7) Test (선택)
       - name: Run ctest
+        shell: cmd
         run: |
           cd build
           ctest -C Release --output-on-failure
